@@ -1,5 +1,4 @@
-// server.js
-
+// Assuming this is an existing game server base code
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -8,53 +7,56 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-let players = {};
-let leaderboard = [];
+const players = {};
+const leaderboard = [];
 
-// Serve static files from the public directory
-app.use(express.static('public'));
-
-// Player management
+// Integrating socket.io
 io.on('connection', (socket) => {
     console.log('A player connected: ' + socket.id);
 
-    // Add new player to players object
-    players[socket.id] = { id: socket.id, x: 0, y: 0, score: 0 };
-
-    // Emit updated player list to all clients
-    io.emit('updatePlayers', players);
-
-    // Handle player movement
-    socket.on('move', (data) => {
-        if (players[socket.id]) {
-            players[socket.id].x = data.x;
-            players[socket.id].y = data.y;
-            // Optionally update scores or handle collision detection here
-        }
+    // Player management
+    socket.on('newPlayer', (playerData) => {
+        players[socket.id] = playerData;
+        // Send updated player info
         io.emit('updatePlayers', players);
     });
 
     // Handle disconnection
     socket.on('disconnect', () => {
-        console.log('Player disconnected: ' + socket.id);
         delete players[socket.id];
         io.emit('updatePlayers', players);
+        console.log('Player disconnected: ' + socket.id);
+    });
+
+    // Handle attacks
+    socket.on('attack', (attackData) => {
+        // Implement attack mechanics here
+        // Update leaderboard etc.
+
+        // Example collision detection
+        for (const [id, player] of Object.entries(players)) {
+            if (id !== socket.id && isColliding(players[socket.id], player)) {
+                // Handle collision
+            }
+        }
     });
 });
 
-// Collision detection function (example)
-function checkCollisions() {
-    // Implement collision detection logic here
+// Collision detection function
+function isColliding(player1, player2) {
+    // Implement your collision detection logic here
+    return false; // Placeholder
 }
 
-// Leaderboard update function (example)
-function updateLeaderboard() {
-    leaderboard = Object.values(players).sort((a, b) => b.score - a.score);
+// Leaderboard system
+function updateLeaderboard(playerId, score) {
+    leaderboard.push({ playerId, score });
+    leaderboard.sort((a, b) => b.score - a.score);
+    if (leaderboard.length > 10) leaderboard.pop(); // Keep top 10
     io.emit('updateLeaderboard', leaderboard);
 }
 
-// Server startup
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log('Server is running on port ' + PORT);
+// Start server
+server.listen(3000, () => {
+    console.log('Server is running on port 3000');
 });
