@@ -3,14 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiplayer Platformer Game Client</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>2D Platformer Game</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        #login { display: flex; flex-direction: column; align-items: center; margin-top: 50px; }
+        #gameCanvas { border: 1px solid black; display: none; }
+        #leaderboard, #health { position: absolute; top: 10px; right: 10px; color: white; }
+    </style>
 </head>
 <body>
-    <h1>Welcome to the Multiplayer Platformer Game</h1>
-    <div id="game-container">
-        <!-- Game UI will be rendered here -->
+    <div id="login">
+        <h1>Login Screen</h1>
+        <input type="text" id="username" placeholder="Enter your username" />
+        <button id="loginButton">Login</button>
     </div>
-    <script src="game.js"></script>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="leaderboard"></div>
+    <div id="health">Health: 100</div>
+    <script>
+        const loginDiv = document.getElementById('login');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const loginButton = document.getElementById('loginButton');
+        const usernameInput = document.getElementById('username');
+        const healthDisplay = document.getElementById('health');
+
+        let health = 100;
+        let players = {};
+
+        // Handle login
+        loginButton.addEventListener('click', () => {
+            const username = usernameInput.value;
+            if (username) {
+                loginDiv.style.display = 'none';
+                gameCanvas.style.display = 'block';
+                initGame(username);
+            } else {
+                alert('Please enter a username.');
+            }
+        });
+
+        function initGame(username) {
+            // Initialize the game logic here
+            setupMultiplayer(username);
+            updateLeaderboard();
+            updateHealth();
+        }
+
+        function setupMultiplayer(username) {
+            // Establish WebSocket connection for multiplayer
+            const socket = new WebSocket('ws://yourserver.com');
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                // Update players' positions and game state based on server data
+            };
+        }
+
+        function updateLeaderboard() {
+            // Mock leaderboard update
+            const leaderboard = document.getElementById('leaderboard');
+            leaderboard.innerHTML = '<h2>Leaderboard</h2>' + Object.keys(players).map(player => `<p>${player}: some_score</p>`).join('');
+        }
+
+        function updateHealth() {
+            healthDisplay.innerText = 'Health: ' + health;
+        }
+
+        function gameLoop() {
+            // Main game loop
+            requestAnimationFrame(gameLoop);
+            // Game mechanics, rendering, etc.
+        }
+
+        requestAnimationFrame(gameLoop);
+    </script>
 </body>
 </html>
