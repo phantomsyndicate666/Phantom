@@ -1,3 +1,5 @@
+// server.js
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -6,63 +8,53 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Basic server settings
-const PORT = process.env.PORT || 3000;
+let players = {};
+let leaderboard = [];
 
-global.players = {};
-
-// Serve static files
+// Serve static files from the public directory
 app.use(express.static('public'));
 
-// Map generation function
-function generateMap() {
-    const map = [];
-    for (let i = 0; i < 10; i++) {
-        map.push([]);
-        for (let j = 0; j < 10; j++) {
-            map[i][j] = Math.random() > 0.5 ? 1 : 0; // 1 = land, 0 = water
-        }
-    }
-    return map;
-}
-
-// Socket.io connection
+// Player management
 io.on('connection', (socket) => {
     console.log('A player connected: ' + socket.id);
 
-    // Initialize player
-    players[socket.id] = {
-        id: socket.id,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-    };
+    // Add new player to players object
+    players[socket.id] = { id: socket.id, x: 0, y: 0, score: 0 };
 
-    // Send current player data
-    socket.emit('init', players[socket.id]);
-
-    // Broadcast new player to all other players
-    socket.broadcast.emit('newPlayer', players[socket.id]);
+    // Emit updated player list to all clients
+    io.emit('updatePlayers', players);
 
     // Handle player movement
-    socket.on('move', (direction) => {
-        if (direction === 'left') players[socket.id].x--;
-        if (direction === 'right') players[socket.id].x++;
-        if (direction === 'up') players[socket.id].y--;
-        if (direction === 'down') players[socket.id].y++;
-
-        // Broadcast updated player position
-        socket.broadcast.emit('playerMoved', players[socket.id]);
+    socket.on('move', (data) => {
+        if (players[socket.id]) {
+            players[socket.id].x = data.x;
+            players[socket.id].y = data.y;
+            // Optionally update scores or handle collision detection here
+        }
+        io.emit('updatePlayers', players);
     });
 
-    // Handle player disconnection
+    // Handle disconnection
     socket.on('disconnect', () => {
         console.log('Player disconnected: ' + socket.id);
         delete players[socket.id];
-        socket.broadcast.emit('playerDisconnected', socket.id);
+        io.emit('updatePlayers', players);
     });
 });
 
+// Collision detection function (example)
+function checkCollisions() {
+    // Implement collision detection logic here
+}
+
+// Leaderboard update function (example)
+function updateLeaderboard() {
+    leaderboard = Object.values(players).sort((a, b) => b.score - a.score);
+    io.emit('updateLeaderboard', leaderboard);
+}
+
+// Server startup
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    generateMap(); // Generate the map on server start
+    console.log('Server is running on port ' + PORT);
 });
